@@ -1,0 +1,58 @@
+# Step 1: Import Required Libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.metrics import mean_squared_error, r2_score
+import joblib
+
+# Step 2: Load the Dataset
+dataset_path = 'improved_weather_data.csv'  # Update with actual path
+data = pd.read_csv(dataset_path)
+
+# Step 3: Feature Selection
+features = [
+    'temperature_2m_C', 'humidity_2m_%', 'sea_level_pressure_hPa',
+    'precipitation_mm', 'cloud_cover_%', 'shortwave_radiation_Wm2',
+    'zenith_deg', 'azimuth_deg'
+]
+target = 'power_generated_kW'
+
+X = data[features]
+y = data[target]
+
+# Step 4: Train-Test Split (80% training, 20% testing)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 5: Create Machine Learning Pipeline
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),  # Normalize features
+    ('poly_features', PolynomialFeatures(degree=2, include_bias=False)),  # Polynomial regression
+    ('model', Ridge(alpha=1.0))  # Ridge regression (regularization)
+])
+
+# Step 6: Hyperparameter Tuning (Grid Search)
+param_grid = {'model__alpha': [0.1, 1.0, 10, 100]}  # Adjust regularization strength
+grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring='r2')
+grid_search.fit(X_train, y_train)
+
+# Step 7: Best Model Selection
+best_model = grid_search.best_estimator_
+
+# Step 8: Predictions
+y_pred = best_model.predict(X_test)
+
+# Step 9: Model Evaluation
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("🔍 Model Evaluation Metrics:")
+print(f"✅ Best Hyperparameter (alpha): {grid_search.best_params_['model__alpha']}")
+print(f"📉 Mean Squared Error (MSE): {mse:.2f}")
+print(f"📈 R-squared (R2): {r2:.2f}")
+
+# Step 10: Save the Model for Future Predictions
+joblib.dump(best_model, 'advanced_solar_power_model.pkl')
+print("\n🎯 Model saved as 'advanced_solar_power_model.pkl'")
